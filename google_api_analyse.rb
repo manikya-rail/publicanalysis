@@ -28,6 +28,18 @@ class GitHubRepoAnalysis
     puts "\n Downloaded csv....\n\n"
   end
 
+  def display_most_used(languages)
+    # most used languages
+    puts "\n Most used languages"
+    puts Hash[languages.sort_by { |_k, v| -v }[0..4]]
+  end
+
+  def display_least_used(languages)
+    # less used languages
+    puts "\n Less used languages"
+    puts Hash[languages.sort_by { |_k, v| v }[0..4]]
+  end
+  
   def generate_csv(parsed_res)
     # writing contents to output file
     CSV.open('Api_result.csv', 'wb') do |csv|
@@ -40,16 +52,5 @@ class GitHubRepoAnalysis
     end
   end
 
-  def display_most_used(languages)
-    # most used languages
-    puts "\n Most used languages"
-    puts Hash[languages.sort_by { |_k, v| -v }[0..4]]
-  end
-
-  def display_least_used(languages)
-    # less used languages
-    puts "\n Less used languages"
-    puts Hash[languages.sort_by { |_k, v| v }[0..4]]
-  end
 end
 GitHubRepoAnalysis.new.init_api_call

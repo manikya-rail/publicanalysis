@@ -3,15 +3,14 @@
 require 'httparty'
 require 'csv'
 
+# class for the analysis
 class GitHubRepoAnalysis
   # setting attribute readers
   attr_reader :parent_lang_hash
-  attr_reader :languages
 
   def initialize
     # initializing both hashes
-    @parent_lang_hash = {}
-    @languages = {}
+    @parent_lang_hash = Hash.new(0)
   end
 
   def init_api_call
@@ -19,47 +18,26 @@ class GitHubRepoAnalysis
     url = 'https://api.github.com/orgs/google/repos'
     response = HTTParty.get(url)
     parsed_res = response.parsed_response
-    parsed_res.each  do |json_res|
-      json_res.each  do |key, val|
-        if key.to_s == 'language'
-          if parent_lang_hash.key?(val)
-            parent_lang_hash[val][val] += 1
-            parent_lang_hash[val]["reponame_#{parent_lang_hash[val][val]}"] = json_res['name']
-            parent_lang_hash[val]["create_date_#{parent_lang_hash[val][val]}"] = json_res['created_at']
-          else
-            parent_lang_hash[val] = {}
-            parent_lang_hash[val][val] = 1
-            parent_lang_hash[val]['name'] = val
-            parent_lang_hash[val]['reponame_1'] = json_res['name']
-            parent_lang_hash[val]['create_date_1'] = json_res['created_at']
-          end
-        end
-      end
+    parsed_res.each do |json_res|
+      parent_lang_hash[json_res['language']] += 1
     end
-    create_output_file
-    write_to_output_file(parent_lang_hash)
+
+    display_most_used(parent_lang_hash)
+    display_least_used(parent_lang_hash)
+    generate_csv(parsed_res)
+    puts "\n Downloaded csv....\n\n"
   end
 
-  def create_output_file
-    # creating output file
-    CSV.open('Api_result.csv', 'a') do |csv|
-      csv << ['Language', 'Repository name', 'Created Date']
-    end
-  end
-
-  def write_to_output_file(parent_lang_hash)
+  def generate_csv(parsed_res)
     # writing contents to output file
-    parent_lang_hash.each do |key, _val|
-      languages[parent_lang_hash[key]['name']] = parent_lang_hash[key][key].to_i
-
-      CSV.open('Api_result.csv', 'a') do |csv|
-        parent_lang_hash[key][key].to_i.times do |count|
-          csv << [parent_lang_hash[key]['name'], parent_lang_hash[key]["reponame_#{count + 1}"], parent_lang_hash[key]["create_date_#{count + 1}"]]
+    CSV.open('Api_result.csv', 'wb') do |csv|
+      csv << ['Repository name', 'language', 'Created Date']
+      parsed_res.each do |value|
+        unless value['language'].nil?
+          csv << [value['name'], value['language'], value['created_at']]
         end
       end
     end
-    display_most_used(languages)
-    display_least_used(languages)
   end
 
   def display_most_used(languages)
@@ -74,5 +52,4 @@ class GitHubRepoAnalysis
     puts Hash[languages.sort_by { |_k, v| v }[0..4]]
   end
 end
-
 GitHubRepoAnalysis.new.init_api_call
